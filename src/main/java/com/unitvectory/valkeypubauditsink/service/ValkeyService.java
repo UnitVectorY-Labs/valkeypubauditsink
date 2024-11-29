@@ -13,8 +13,11 @@
  */
 package com.unitvectory.valkeypubauditsink.service;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 /**
@@ -25,12 +28,32 @@ import org.springframework.stereotype.Service;
 @Service
 public class ValkeyService {
 
-    public ValkeyService(@Value("${valkey.host}") String valkeyHost,
-            @Value("${valkey.port}") Long valkeyPort) {
+    @Autowired
+    private ReactiveStringRedisTemplate redisTemplate;
 
-    }
+    @Value("${valkey.prefix:doc}")
+    private String prefix;
 
     public void process(JSONObject json) {
-        // TODO: Implement this method
+        String database = json.optString("database", null);
+        String documentPath = json.optString("documentPath", null);
+
+        if (database == null || documentPath == null) {
+            return;
+        }
+
+        // SHA256 hash the database and document path
+        String key = this.prefix + ":" + DigestUtils.sha256Hex(database + "/" + documentPath);
+
+        if (!json.has("value") || json.isNull("value")) {
+            // Delete
+            redisTemplate.opsForValue().delete(key).block();
+        } else {
+            // Insert or Update
+            String value = json.getJSONObject("value").toString();
+            redisTemplate.opsForValue().set(key, value).block();
+
+            // TODO: Deteremine how to have GSIs populate
+        }
     }
 }
