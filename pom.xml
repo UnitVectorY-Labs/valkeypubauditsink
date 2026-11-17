@@ -43,6 +43,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>17</java.version>
         <maven.compiler.release>17</maven.compiler.release>
+        <!-- Keep Jackson modules aligned on the patched release until Spring Boot manages it. -->
+        <jackson-bom.version>2.21.7</jackson-bom.version>
     </properties>
 
     <dependencyManagement>
